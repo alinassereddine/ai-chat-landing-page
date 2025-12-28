@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Plus, ChevronDown, ArrowUp, X, FileText, Loader2, Check, Archive } from "lucide-react";
+import type { AttachedFile, PastedContent, Model } from "@/lib/types";
+import { AI_MODELS } from "@/lib/types";
 
 /* --- ICONS --- */
-export const Icons = {
+const Icons = {
     Logo: (props: React.SVGProps<SVGSVGElement>) => (
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="presentation" {...props}>
             <defs>
@@ -16,7 +18,6 @@ export const Icons = {
             </g>
         </svg>
     ),
-    // Using Lucide React for premium, consistent icons
     Plus: Plus,
     Thinking: (props: React.SVGProps<SVGSVGElement>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}><path d="M10.3857 2.50977C14.3486 2.71054 17.5 5.98724 17.5 10C17.5 14.1421 14.1421 17.5 10 17.5C5.85786 17.5 2.5 14.1421 2.5 10C2.5 9.72386 2.72386 9.5 3 9.5C3.27614 9.5 3.5 9.72386 3.5 10C3.5 13.5899 6.41015 16.5 10 16.5C13.5899 16.5 16.5 13.5899 16.5 10C16.5 6.5225 13.7691 3.68312 10.335 3.50879L10 3.5L9.89941 3.49023C9.67145 3.44371 9.5 3.24171 9.5 3C9.5 2.72386 9.72386 2.5 10 2.5L10.3857 2.50977ZM10 5.5C10.2761 5.5 10.5 5.72386 10.5 6V9.69043L13.2236 11.0527C13.4706 11.1762 13.5708 11.4766 13.4473 11.7236C13.3392 11.9397 13.0957 12.0435 12.8711 11.9834L12.7764 11.9473L9.77637 10.4473C9.60698 10.3626 9.5 10.1894 9.5 10V6C9.5 5.72386 9.72386 5.5 10 5.5ZM3.66211 6.94141C4.0273 6.94159 4.32303 7.23735 4.32324 7.60254C4.32324 7.96791 4.02743 8.26446 3.66211 8.26465C3.29663 8.26465 3 7.96802 3 7.60254C3.00021 7.23723 3.29676 6.94141 3.66211 6.94141ZM4.95605 4.29395C5.32146 4.29404 5.61719 4.59063 5.61719 4.95605C5.6171 5.3214 5.3214 5.61709 4.95605 5.61719C4.59063 5.61719 4.29403 5.32146 4.29395 4.95605C4.29395 4.59057 4.59057 4.29395 4.95605 4.29395ZM7.60254 3C7.96802 3 8.26465 3.29663 8.26465 3.66211C8.26446 4.02743 7.96791 4.32324 7.60254 4.32324C7.23736 4.32302 6.94159 4.0273 6.94141 3.66211C6.94141 3.29676 7.23724 3.00022 7.60254 3Z"></path></svg>,
     SelectArrow: ChevronDown,
@@ -39,17 +40,6 @@ const formatFileSize = (bytes: number) => {
 };
 
 /* --- COMPONENTS --- */
-
-// 1. File Preview Card
-// 1. File Preview Card
-interface AttachedFile {
-    id: string;
-    file: File;
-    type: string;
-    preview: string | null;
-    uploadStatus: string;
-    content?: string;
-}
 
 interface FilePreviewCardProps {
     file: AttachedFile;
@@ -107,11 +97,7 @@ const FilePreviewCard: React.FC<FilePreviewCardProps> = ({ file, onRemove }) => 
 
 // 2. Pasted Content Card
 interface PastedContentCardProps {
-    content: {
-        id: string;
-        content: string;
-        timestamp: Date;
-    };
+    content: PastedContent;
     onRemove: (id: string) => void;
 }
 
@@ -141,24 +127,17 @@ const PastedContentCard: React.FC<PastedContentCardProps> = ({ content, onRemove
 };
 
 // 3. Model Selector
-interface Model {
-    id: string;
-    name: string;
-    description: string;
-    badge?: string;
-}
-
 interface ModelSelectorProps {
     models: Model[];
-    selectedModel: string;
+    selectedModelId: string;
     onSelect: (modelId: string) => void;
 }
 
-const ModelSelector: React.FC<ModelSelectorProps> = ({ models, selectedModel, onSelect }) => {
+const ModelSelector: React.FC<ModelSelectorProps> = ({ models, selectedModelId, onSelect }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const currentModel = models.find(m => m.id === selectedModel) || models[0];
+    const currentModel = models.find(m => m.id === selectedModelId) || models[0];
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -190,7 +169,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ models, selectedModel, on
             </button>
 
             {isOpen && (
-                <div className="absolute bottom-full right-0 mb-2 w-[260px] bg-white dark:bg-[#212121] border border-[#DDDDDD] dark:border-[#30302E] rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col p-1.5 animate-fade-in origin-bottom-right">
+                <div className="absolute bottom-full right-0 mb-2 w-[260px] bg-white dark:bg-[#212121] border border-[#DDDDDD] dark:border-[#30302E] rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col p-1.5 animate-fade-in origin-bottom-right max-h-80 overflow-y-auto custom-scrollbar">
                     {models.map(model => (
                         <button
                             key={model.id}
@@ -206,7 +185,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ models, selectedModel, on
                                         {model.name}
                                     </span>
                                     {model.badge && (
-                                        <span className={`px-1.5 py-[1px] rounded-full text-[10px] font-medium border ${model.badge === 'Upgrade'
+                                        <span className={`px-1.5 py-[1px] rounded-full text-[10px] font-medium border ${model.badge === 'New'
                                             ? 'border-blue-200 text-blue-600 bg-white dark:border-blue-500/30 dark:text-blue-400 dark:bg-blue-500/10'
                                             : 'border-bg-300 text-text-300'
                                             }`}>
@@ -215,21 +194,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ models, selectedModel, on
                                     )}
                                 </div>
                                 <span className="text-[11px] text-text-300 dark:text-[#999999]">
-                                    {model.description}
+                                    {model.provider} • {model.description}
                                 </span>
                             </div>
-                            {selectedModel === model.id && (
+                            {selectedModelId === model.id && (
                                 <Icons.Check className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-1" />
                             )}
                         </button>
                     ))}
-
-                    <div className="h-px bg-bg-300 dark:bg-[#30302E] my-1 mx-2" />
-
-                    <button className="w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between group transition-colors hover:bg-bg-200 dark:hover:bg-[#30302E] text-text-100 dark:text-[#ECECEC]">
-                        <span className="text-[13px] font-semibold">More models</span>
-                        <Icons.SelectArrow className="w-4 h-4 -rotate-90 text-text-300 dark:text-[#999999]" />
-                    </button>
                 </div>
             )}
         </div>
@@ -237,38 +209,33 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ models, selectedModel, on
 };
 
 // 4. Main Chat Input Component
-interface ClaudeChatInputProps {
+export interface ClaudeChatInputProps {
     onSendMessage: (data: {
         message: string;
         files: AttachedFile[];
-        pastedContent: AttachedFile[];
-        model: string;
+        pastedContent: PastedContent[];
+        modelId: string;
         isThinkingEnabled: boolean
     }) => void;
+    isLoading?: boolean;
 }
 
-export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage }) => {
+export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage, isLoading }) => {
     const [message, setMessage] = useState("");
     const [files, setFiles] = useState<AttachedFile[]>([]);
-    const [pastedContent, setPastedContent] = useState<AttachedFile[]>([]);
-    const [isDragging, setIsDragging] = useState(false);
-    const [selectedModel, setSelectedModel] = useState("sonnet-4.5");
+    const [pastedContent, setPastedContent] = useState<PastedContent[]>([]);
+    const [, setIsDragging] = useState(false); // Ignored since it's only set, not read in current layout logic
+    const [selectedModelId, setSelectedModelId] = useState(AI_MODELS[0].id);
     const [isThinkingEnabled, setIsThinkingEnabled] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const models = [
-        { id: "opus-4.5", name: "Opus 4.5", description: "Most capable for complex work" },
-        { id: "sonnet-4.5", name: "Sonnet 4.5", description: "Best for everyday tasks" },
-        { id: "haiku-4.5", name: "Haiku 4.5", description: "Fastest for quick answers" }
-    ];
-
     // Auto-resize textarea
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
-            textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 384) + "px"; // 96 * 4 = 384px (max-h-96)
+            textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 384) + "px";
         }
     }, [message]);
 
@@ -279,25 +246,13 @@ export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage 
             return {
                 id: Math.random().toString(36).substr(2, 9),
                 file,
-                type: isImage ? 'image/unknown' : (file.type || 'application/octet-stream'), // Force image type if detected by extension
+                type: isImage ? 'image/unknown' : (file.type || 'application/octet-stream'),
                 preview: isImage ? URL.createObjectURL(file) : null,
                 uploadStatus: 'pending'
             };
         });
 
-        // Simulate Upload
         setFiles(prev => [...prev, ...newFiles]);
-
-        // Dynamic Feedback Message
-        setMessage(prev => {
-            if (prev) return prev;
-            if (newFiles.length === 1) {
-                const f = newFiles[0];
-                if (f.type.startsWith('image/')) return "Analyzed image...";
-                return "Analyzed document...";
-            }
-            return `Analyzed ${newFiles.length} files...`;
-        });
 
         newFiles.forEach(f => {
             setTimeout(() => {
@@ -332,26 +287,30 @@ export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage 
             return;
         }
 
-        // Handle large text paste
         const text = e.clipboardData.getData('text');
         if (text.length > 300) {
             e.preventDefault();
-            const snippet = {
+            const snippet: PastedContent = {
                 id: Math.random().toString(36).substr(2, 9),
                 content: text,
                 timestamp: new Date()
             };
             setPastedContent(prev => [...prev, snippet]);
-
-            if (!message) {
-                setMessage("Analyzed pasted text...");
-            }
         }
     };
 
     const handleSend = () => {
         if (!message.trim() && files.length === 0 && pastedContent.length === 0) return;
-        onSendMessage({ message, files, pastedContent, model: selectedModel, isThinkingEnabled });
+        if (isLoading) return;
+
+        onSendMessage({
+            message,
+            files,
+            pastedContent,
+            modelId: selectedModelId,
+            isThinkingEnabled
+        });
+
         setMessage("");
         setFiles([]);
         setPastedContent([]);
@@ -365,7 +324,7 @@ export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage 
         }
     };
 
-    const hasContent = message.trim() || files.length > 0 || pastedContent.length > 0;
+    const hasContent = (message.trim() || files.length > 0 || pastedContent.length > 0) && !isLoading;
 
     return (
         <div
@@ -374,38 +333,34 @@ export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage 
             onDragLeave={onDragLeave}
             onDrop={onDrop}
         >
-            {/* Main Container - matching the inspected element structure */}
             <div className={`
                 !box-content flex flex-col mx-2 md:mx-0 items-stretch transition-all duration-200 relative z-10 rounded-2xl cursor-text border border-bg-300 dark:border-transparent 
                 shadow-[0_0_15px_rgba(0,0,0,0.08)] hover:shadow-[0_0_20px_rgba(0,0,0,0.12)]
                 focus-within:shadow-[0_0_25px_rgba(0,0,0,0.15)]
                 bg-white dark:bg-[#30302E] font-sans antialiased
+                ${isLoading ? 'opacity-80 grayscale-[0.2]' : ''}
             `}>
 
                 <div className="flex flex-col px-3 pt-3 pb-2 gap-2">
-
-                    {/* 1. Artifacts (Files & Pastes) - Rendered ABOVE text input */}
                     {(files.length > 0 || pastedContent.length > 0) && (
                         <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2 px-1">
                             {pastedContent.map(content => (
                                 <PastedContentCard
                                     key={content.id}
                                     content={content}
-                                    onRemove={id => setPastedContent(prev => prev.filter(c => c.id !== id))}
+                                    onRemove={(id: string) => setPastedContent(prev => prev.filter(c => c.id !== id))}
                                 />
                             ))}
                             {files.map(file => (
                                 <FilePreviewCard
                                     key={file.id}
                                     file={file}
-                                    onRemove={id => setFiles(prev => prev.filter(f => f.id !== id))}
+                                    onRemove={(id: string) => setFiles(prev => prev.filter(f => f.id !== id))}
                                 />
                             ))}
                         </div>
                     )}
 
-                    {/* 2. Input Area */}
-                    {/* 2. Input Area */}
                     <div className="relative mb-1">
                         <div className="max-h-96 w-full overflow-y-auto custom-scrollbar font-sans break-words transition-opacity duration-200 min-h-[2.5rem] pl-1">
                             <textarea
@@ -414,7 +369,8 @@ export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage 
                                 onChange={(e) => setMessage(e.target.value)}
                                 onPaste={handlePaste}
                                 onKeyDown={handleKeyDown}
-                                placeholder="How can I help you today?"
+                                disabled={isLoading}
+                                placeholder={isLoading ? "AI is thinking..." : "How can I help you today?"}
                                 className="w-full bg-transparent border-0 outline-none text-text-100 text-[16px] placeholder:text-text-400 resize-none overflow-hidden py-0 leading-relaxed block font-normal antialiased"
                                 rows={1}
                                 autoFocus
@@ -423,57 +379,41 @@ export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage 
                         </div>
                     </div>
 
-                    {/* 2. Action Bar */}
                     <div className="flex gap-2 w-full items-center">
-                        {/* Left Tools */}
                         <div className="relative flex-1 flex items-center shrink min-w-0 gap-1">
-
-                            {/* Toggle Menu / Attach Button */}
-                            {/* Toggle Menu / Attach Button - Compact & Subtle */}
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="inline-flex items-center justify-center relative shrink-0 transition-colors duration-200 h-8 w-8 rounded-lg active:scale-95 text-text-400 hover:text-text-200 hover:bg-bg-200"
+                                disabled={isLoading}
+                                className="inline-flex items-center justify-center relative shrink-0 transition-colors duration-200 h-8 w-8 rounded-lg active:scale-95 text-text-400 hover:text-text-200 hover:bg-bg-200 disabled:opacity-50"
                                 type="button"
-                                aria-label="Toggle menu"
                             >
                                 <Icons.Plus className="w-5 h-5" />
                             </button>
 
-                            {/* Extended Thinking Button - Compact & Subtle */}
                             <div className="flex shrink min-w-8 !shrink-0">
                                 <button
                                     onClick={() => setIsThinkingEnabled(!isThinkingEnabled)}
-                                    className={`transition-all duration-200 h-8 w-8 flex items-center justify-center rounded-lg active:scale-95
+                                    disabled={isLoading}
+                                    className={`transition-all duration-200 h-8 w-8 flex items-center justify-center rounded-lg active:scale-95 disabled:opacity-50
                                         ${isThinkingEnabled
                                             ? 'text-accent bg-accent/10'
                                             : 'text-text-400 hover:text-text-200 hover:bg-bg-200'}
                                     `}
-                                    aria-pressed={isThinkingEnabled}
-                                    aria-label="Extended thinking"
                                 >
                                     <Icons.Thinking className="w-5 h-5" />
-
-                                    {/* Tooltip - Positioned Below */}
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-[#1F1E1D] dark:bg-[#EEEEEC] text-bg-0 dark:text-bg-100 text-[11px] font-medium rounded-[6px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 flex items-center gap-1 shadow-sm tracking-wide">
-                                        <span className="text-[#ECECEC] dark:text-[#1F1E1D]">Extended thinking</span>
-                                        <span className="text-[#999999] dark:text-[#73726C] opacity-80" style={{ fontSize: '10px' }}>⇧+Ctrl+E</span>
-                                    </div>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Right Tools */}
                         <div className="flex flex-row items-center min-w-0 gap-1">
-                            {/* Model Selector */}
                             <div className="shrink-0 p-1 -m-1">
                                 <ModelSelector
-                                    models={models}
-                                    selectedModel={selectedModel}
-                                    onSelect={setSelectedModel}
+                                    models={AI_MODELS}
+                                    selectedModelId={selectedModelId}
+                                    onSelect={setSelectedModelId}
                                 />
                             </div>
 
-                            {/* Send Button */}
                             <div>
                                 <button
                                     onClick={handleSend}
@@ -485,9 +425,12 @@ export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage 
                                             : 'bg-accent/30 text-bg-0/60 cursor-default'}
                                     `}
                                     type="button"
-                                    aria-label="Send message"
                                 >
-                                    <Icons.ArrowUp className="w-4 h-4" />
+                                    {isLoading ? (
+                                        <Icons.Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Icons.ArrowUp className="w-4 h-4" />
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -495,17 +438,6 @@ export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage 
                 </div>
             </div>
 
-            {/* Drag Overlay */}
-            {
-                isDragging && (
-                    <div className="absolute inset-0 bg-bg-200/90 border-2 border-dashed border-accent rounded-2xl z-50 flex flex-col items-center justify-center backdrop-blur-sm pointer-events-none">
-                        <Icons.Archive className="w-10 h-10 text-accent mb-2 animate-bounce" />
-                        <p className="text-accent font-medium">Drop files to upload</p>
-                    </div>
-                )
-            }
-
-            {/* Hidden Input */}
             <input
                 ref={fileInputRef}
                 type="file"

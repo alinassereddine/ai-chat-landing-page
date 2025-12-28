@@ -1,28 +1,6 @@
-import React, { useState } from 'react';
-import ClaudeChatInput from '../components/ui/claude-style-chat-input';
-import { FileText, Loader2, Code, Archive } from 'lucide-react';
-
-const Icons = {
-    FileText,
-    Loader2,
-    Code,
-    Archive
-};
-
-interface AttachedFile {
-    id: string;
-    file: File;
-    type: string;
-    preview: string | null;
-    uploadStatus: string;
-    content?: string;
-}
-
-interface PastedContent {
-    id: string;
-    content: string;
-    timestamp: Date;
-}
+import { useState } from 'react';
+import ClaudeChatInput from '@/components/ui/claude-style-chat-input';
+import type { AttachedFile, PastedContent } from '@/lib/types';
 
 const ChatboxDemo = () => {
     const [messages, setMessages] = useState<string[]>([]);
@@ -31,13 +9,13 @@ const ChatboxDemo = () => {
         message: string;
         files: AttachedFile[];
         pastedContent: PastedContent[];
-        model: string;
+        modelId: string;
         isThinkingEnabled: boolean;
     }) => {
         console.log('Sending message:', data.message);
         console.log('Attached files:', data.files);
         console.log('Pasted content:', data.pastedContent);
-        console.log('Model:', data.model);
+        console.log('Model ID:', data.modelId);
         console.log('Thinking enabled:', data.isThinkingEnabled);
         setMessages([...messages, data.message]);
     };
@@ -109,9 +87,6 @@ const ChatboxDemo = () => {
                     </svg>
                     Life stuff
                 </button>
-            </div>
-
-            <div className="absolute bottom-4 text-xs text-text-400 font-sans opacity-60 hover:opacity-100 transition-opacity">
             </div>
         </div>
     );
