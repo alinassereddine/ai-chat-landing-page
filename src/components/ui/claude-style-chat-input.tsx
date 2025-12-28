@@ -1,25 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Plus, ChevronDown, ArrowUp, X, FileText, Loader2, Check, Archive } from "lucide-react";
+import { Plus, ChevronDown, ArrowUp, X, FileText, Loader2, Check, Archive, Clock } from "lucide-react";
 import type { AttachedFile, PastedContent, Model } from "@/lib/types";
 import { AI_MODELS } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 /* --- ICONS --- */
 const Icons = {
-    Logo: (props: React.SVGProps<SVGSVGElement>) => (
-        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="presentation" {...props}>
-            <defs>
-                <ellipse id="petal-pair" cx="100" cy="100" rx="90" ry="22" />
-            </defs>
-            <g fill="#D46B4F" fillRule="evenodd">
-                <use href="#petal-pair" transform="rotate(0 100 100)" />
-                <use href="#petal-pair" transform="rotate(45 100 100)" />
-                <use href="#petal-pair" transform="rotate(90 100 100)" />
-                <use href="#petal-pair" transform="rotate(135 100 100)" />
-            </g>
-        </svg>
-    ),
     Plus: Plus,
-    Thinking: (props: React.SVGProps<SVGSVGElement>) => <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg" {...props}><path d="M10.3857 2.50977C14.3486 2.71054 17.5 5.98724 17.5 10C17.5 14.1421 14.1421 17.5 10 17.5C5.85786 17.5 2.5 14.1421 2.5 10C2.5 9.72386 2.72386 9.5 3 9.5C3.27614 9.5 3.5 9.72386 3.5 10C3.5 13.5899 6.41015 16.5 10 16.5C13.5899 16.5 16.5 13.5899 16.5 10C16.5 6.5225 13.7691 3.68312 10.335 3.50879L10 3.5L9.89941 3.49023C9.67145 3.44371 9.5 3.24171 9.5 3C9.5 2.72386 9.72386 2.5 10 2.5L10.3857 2.50977ZM10 5.5C10.2761 5.5 10.5 5.72386 10.5 6V9.69043L13.2236 11.0527C13.4706 11.1762 13.5708 11.4766 13.4473 11.7236C13.3392 11.9397 13.0957 12.0435 12.8711 11.9834L12.7764 11.9473L9.77637 10.4473C9.60698 10.3626 9.5 10.1894 9.5 10V6C9.5 5.72386 9.72386 5.5 10 5.5ZM3.66211 6.94141C4.0273 6.94159 4.32303 7.23735 4.32324 7.60254C4.32324 7.96791 4.02743 8.26446 3.66211 8.26465C3.29663 8.26465 3 7.96802 3 7.60254C3.00021 7.23723 3.29676 6.94141 3.66211 6.94141ZM4.95605 4.29395C5.32146 4.29404 5.61719 4.59063 5.61719 4.95605C5.6171 5.3214 5.3214 5.61709 4.95605 5.61719C4.59063 5.61719 4.29403 5.32146 4.29395 4.95605C4.29395 4.59057 4.59057 4.29395 4.95605 4.29395ZM7.60254 3C7.96802 3 8.26465 3.29663 8.26465 3.66211C8.26446 4.02743 7.96791 4.32324 7.60254 4.32324C7.23736 4.32302 6.94159 4.0273 6.94141 3.66211C6.94141 3.29676 7.23724 3.00022 7.60254 3Z"></path></svg>,
+    Clock: Clock,
     SelectArrow: ChevronDown,
     ArrowUp: ArrowUp,
     X: X,
@@ -27,7 +15,7 @@ const Icons = {
     Loader2: Loader2,
     Check: Check,
     Archive: Archive,
-    Clock: (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" {...props}><path d="M10.3857 2.50977C14.3486 2.71054 17.5 5.98724 17.5 10C17.5 14.1421 14.1421 17.5 10 17.5C5.85786 17.5 2.5 14.1421 2.5 10C2.5 9.72386 2.72386 9.5 3 9.5C3.27614 9.5 3.5 9.72386 3.5 10C3.5 13.5899 6.41015 16.5 10 16.5C13.5899 16.5 16.5 13.5899 16.5 10C16.5 6.5225 13.7691 3.68312 10.335 3.50879L10 3.5L9.89941 3.49023C9.67145 3.44371 9.5 3.24171 9.5 3C9.5 2.72386 9.72386 2.5 10 2.5L10.3857 2.50977ZM10 5.5C10.2761 5.5 10.5 5.72386 10.5 6V9.69043L13.2236 11.0527C13.4706 11.1762 13.5708 11.4766 13.4473 11.7236C13.3392 11.9397 13.0957 12.0435 12.8711 11.9834L12.7764 11.9473L9.77637 10.4473C9.60698 10.3626 9.5 10.1894 9.5 10V6C9.5 5.72386 9.72386 5.5 10 5.5ZM3.66211 6.94141C4.0273 6.94159 4.32303 7.23735 4.32324 7.60254C4.32324 7.96791 4.02743 8.26446 3.66211 8.26465C3.29663 8.26465 3 7.96802 3 7.60254C3.00021 7.23723 3.29676 6.94141 3.66211 6.94141ZM4.95605 4.29395C5.32146 4.29404 5.61719 4.59063 5.61719 4.95605C5.6171 5.3214 5.3214 5.61709 4.95605 5.61719C4.59063 5.61719 4.29403 5.32146 4.29395 4.95605C4.29395 4.59057 4.59057 4.29395 4.95605 4.29395ZM7.60254 3C7.96802 3 8.26465 3.29663 8.26465 3.66211C8.26446 4.02743 7.96791 4.32324 7.60254 4.32324C7.23736 4.32302 6.94159 4.0273 6.94141 3.66211C6.94141 3.29676 7.23724 3.00022 7.60254 3Z"></path></svg>,
+    Minimize: ChevronDown,
 };
 
 /* --- UTILS --- */
@@ -50,52 +38,43 @@ const FilePreviewCard: React.FC<FilePreviewCardProps> = ({ file, onRemove }) => 
     const isImage = file.type.startsWith("image/") && file.preview;
 
     return (
-        <div className={`relative group flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-bg-300 bg-bg-200 animate-fade-in transition-all hover:border-text-400`}>
+        <div className={`relative group flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50/50 animate-fade-in transition-all hover:border-text-400`}>
             {isImage ? (
                 <div className="w-full h-full relative">
                     <img src={file.preview!} alt={file.file.name} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
+                    <div className="absolute inset-0 bg-black/5 group-hover:bg-black/0 transition-colors" />
                 </div>
             ) : (
                 <div className="w-full h-full p-3 flex flex-col justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-bg-300 rounded">
-                            <Icons.FileText className="w-4 h-4 text-text-300" />
+                        <div className="p-1.5 bg-gray-200 rounded-lg">
+                            <Icons.FileText className="w-4 h-4 text-gray-500" />
                         </div>
-                        <span className="text-[10px] font-medium text-text-400 uppercase tracking-wider truncate">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate">
                             {file.file.name.split('.').pop()}
                         </span>
                     </div>
                     <div className="space-y-0.5">
-                        <p className="text-xs font-medium text-text-200 truncate" title={file.file.name}>
+                        <p className="text-[11px] font-semibold text-gray-700 truncate" title={file.file.name}>
                             {file.file.name}
                         </p>
-                        <p className="text-[10px] text-text-500">
+                        <p className="text-[10px] text-gray-400">
                             {formatFileSize(file.file.size)}
                         </p>
                     </div>
                 </div>
             )}
 
-            {/* Remove Button Overlay */}
             <button
                 onClick={() => onRemove(file.id)}
-                className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-1 right-1 p-1 bg-white/80 dark:bg-black/50 hover:bg-white rounded-full text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
             >
                 <Icons.X className="w-3 h-3" />
             </button>
-
-            {/* Upload Status */}
-            {file.uploadStatus === 'uploading' && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <Icons.Loader2 className="w-5 h-5 text-white animate-spin" />
-                </div>
-            )}
         </div>
     );
 };
 
-// 2. Pasted Content Card
 interface PastedContentCardProps {
     content: PastedContent;
     onRemove: (id: string) => void;
@@ -103,22 +82,20 @@ interface PastedContentCardProps {
 
 const PastedContentCard: React.FC<PastedContentCardProps> = ({ content, onRemove }) => {
     return (
-        <div className="relative group flex-shrink-0 w-28 h-28 rounded-2xl overflow-hidden border border-[#E5E5E5] dark:border-[#30302E] bg-white dark:bg-[#20201F] animate-fade-in p-3 flex flex-col justify-between shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+        <div className="relative group flex-shrink-0 w-28 h-28 rounded-2xl overflow-hidden border border-gray-100 bg-white animate-fade-in p-3 flex flex-col justify-between shadow-sm">
             <div className="overflow-hidden w-full">
-                <p className="text-[10px] text-[#9CA3AF] leading-[1.4] font-mono break-words whitespace-pre-wrap line-clamp-4 select-none">
+                <p className="text-[10px] text-gray-400 leading-[1.4] font-mono break-words whitespace-pre-wrap line-clamp-4 select-none">
                     {content.content}
                 </p>
             </div>
-
             <div className="flex items-center justify-between w-full mt-2">
-                <div className="inline-flex items-center justify-center px-1.5 py-[2px] rounded border border-[#E5E5E5] dark:border-[#404040] bg-white dark:bg-transparent">
-                    <span className="text-[9px] font-bold text-[#6B7280] dark:text-[#9CA3AF] uppercase tracking-wider font-sans">PASTED</span>
+                <div className="inline-flex items-center justify-center px-1.5 py-[2px] rounded border border-gray-100 bg-white">
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">PASTED</span>
                 </div>
             </div>
-
             <button
                 onClick={() => onRemove(content.id)}
-                className="absolute top-2 right-2 p-[3px] bg-white dark:bg-[#30302E] border border-[#E5E5E5] dark:border-[#404040] rounded-full text-[#9CA3AF] hover:text-[#6B7280] dark:hover:text-white transition-colors shadow-sm opacity-0 group-hover:opacity-100"
+                className="absolute top-2 right-2 p-[3px] bg-white border border-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors shadow-sm opacity-0 group-hover:opacity-100"
             >
                 <Icons.X className="w-2 h-2" />
             </button>
@@ -126,7 +103,6 @@ const PastedContentCard: React.FC<PastedContentCardProps> = ({ content, onRemove
     );
 };
 
-// 3. Model Selector
 interface ModelSelectorProps {
     models: Model[];
     selectedModelId: string;
@@ -153,23 +129,17 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ models, selectedModelId, 
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`inline-flex items-center justify-center relative shrink-0 transition font-base duration-300 ease-[cubic-bezier(0.165,0.85,0.45,1)] h-8 rounded-xl px-3 min-w-[4rem] active:scale-[0.98] whitespace-nowrap !text-xs pl-2.5 pr-2 gap-1 
+                className={`inline-flex items-center gap-1 transition-all px-2.5 py-1 rounded-xl active:scale-95
                 ${isOpen
-                        ? 'bg-bg-200 text-text-100 dark:bg-[#454540] dark:text-[#ECECEC]'
-                        : 'text-text-300 hover:text-text-200 hover:bg-bg-200 dark:text-[#B4B4B4] dark:hover:text-[#ECECEC] dark:hover:bg-[#454540]'}`}
+                        ? 'bg-gray-100 text-gray-700'
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
             >
-                <div className="font-ui inline-flex gap-[3px] text-[14px] h-[14px] leading-none items-baseline">
-                    <div className="flex items-center gap-[4px]">
-                        <div className="whitespace-nowrap select-none font-medium">{currentModel.name}</div>
-                    </div>
-                </div>
-                <div className="flex items-center justify-center opacity-75" style={{ width: '20px', height: '20px' }}>
-                    <Icons.SelectArrow className={`shrink-0 opacity-75 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-                </div>
+                <span className="text-[13px] font-medium">{currentModel.name}</span>
+                <Icons.SelectArrow className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && (
-                <div className="absolute bottom-full right-0 mb-2 w-[260px] bg-white dark:bg-[#212121] border border-[#DDDDDD] dark:border-[#30302E] rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col p-1.5 animate-fade-in origin-bottom-right max-h-80 overflow-y-auto custom-scrollbar">
+                <div className="absolute bottom-full right-0 mb-3 w-[240px] bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-50 flex flex-col p-1.5 animate-fade-in origin-bottom-right max-h-80 overflow-y-auto custom-scrollbar">
                     {models.map(model => (
                         <button
                             key={model.id}
@@ -177,28 +147,25 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ models, selectedModelId, 
                                 onSelect(model.id);
                                 setIsOpen(false);
                             }}
-                            className={`w-full text-left px-3 py-2.5 rounded-xl flex items-start justify-between group transition-colors hover:bg-bg-200 dark:hover:bg-[#30302E]`}
+                            className={`w-full text-left px-3 py-2.5 rounded-xl flex items-start justify-between group transition-colors hover:bg-gray-50`}
                         >
                             <div className="flex flex-col gap-0.5">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[13px] font-semibold text-text-100 dark:text-[#ECECEC]">
+                                    <span className="text-[13px] font-semibold text-gray-700">
                                         {model.name}
                                     </span>
                                     {model.badge && (
-                                        <span className={`px-1.5 py-[1px] rounded-full text-[10px] font-medium border ${model.badge === 'New'
-                                            ? 'border-blue-200 text-blue-600 bg-white dark:border-blue-500/30 dark:text-blue-400 dark:bg-blue-500/10'
-                                            : 'border-bg-300 text-text-300'
-                                            }`}>
+                                        <span className="px-1.5 py-[1px] rounded-full text-[10px] font-bold border border-blue-100 text-blue-500 bg-blue-50/50 uppercase">
                                             {model.badge}
                                         </span>
                                     )}
                                 </div>
-                                <span className="text-[11px] text-text-300 dark:text-[#999999]">
-                                    {model.provider} • {model.description}
+                                <span className="text-[11px] text-gray-400 font-medium">
+                                    {model.provider}
                                 </span>
                             </div>
                             {selectedModelId === model.id && (
-                                <Icons.Check className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-1" />
+                                <Icons.Check className="w-4 h-4 text-blue-500 mt-1" />
                             )}
                         </button>
                     ))}
@@ -208,7 +175,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ models, selectedModelId, 
     );
 };
 
-// 4. Main Chat Input Component
 export interface ClaudeChatInputProps {
     onSendMessage: (data: {
         message: string;
@@ -218,85 +184,41 @@ export interface ClaudeChatInputProps {
         isThinkingEnabled: boolean
     }) => void;
     isLoading?: boolean;
+    onMinimize?: () => void;
 }
 
-export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage, isLoading }) => {
+export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage, isLoading, onMinimize }) => {
     const [message, setMessage] = useState("");
     const [files, setFiles] = useState<AttachedFile[]>([]);
     const [pastedContent, setPastedContent] = useState<PastedContent[]>([]);
-    const [, setIsDragging] = useState(false); // Ignored since it's only set, not read in current layout logic
     const [selectedModelId, setSelectedModelId] = useState(AI_MODELS[0].id);
-    const [isThinkingEnabled, setIsThinkingEnabled] = useState(false);
+    const [isThinkingEnabled] = useState(false);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Auto-resize textarea
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
-            textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 384) + "px";
+            textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 300) + "px";
         }
     }, [message]);
 
-    // File Handling
     const handleFiles = useCallback((newFilesList: FileList | File[]) => {
-        const newFiles = Array.from(newFilesList).map(file => {
-            const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
-            return {
-                id: Math.random().toString(36).substr(2, 9),
-                file,
-                type: isImage ? 'image/unknown' : (file.type || 'application/octet-stream'),
-                preview: isImage ? URL.createObjectURL(file) : null,
-                uploadStatus: 'pending'
-            };
-        });
-
+        const newFiles = Array.from(newFilesList).map(file => ({
+            id: Math.random().toString(36).substr(2, 9),
+            file,
+            type: file.type.startsWith('image/') ? 'image/unknown' : file.type,
+            preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+            uploadStatus: 'complete' as const
+        }));
         setFiles(prev => [...prev, ...newFiles]);
-
-        newFiles.forEach(f => {
-            setTimeout(() => {
-                setFiles(prev => prev.map(p => p.id === f.id ? { ...p, uploadStatus: 'complete' } : p));
-            }, 800 + Math.random() * 1000);
-        });
     }, []);
 
-    // Drag & Drop
-    const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-    const onDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
+    const onDragOver = (e: React.DragEvent) => e.preventDefault();
     const onDrop = (e: React.DragEvent) => {
         e.preventDefault();
-        setIsDragging(false);
         if (e.dataTransfer.files) handleFiles(e.dataTransfer.files);
-    };
-
-    // Paste Handling
-    const handlePaste = (e: React.ClipboardEvent) => {
-        const items = e.clipboardData.items;
-        const pastedFiles: File[] = [];
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].kind === 'file') {
-                const file = items[i].getAsFile();
-                if (file) pastedFiles.push(file);
-            }
-        }
-
-        if (pastedFiles.length > 0) {
-            e.preventDefault();
-            handleFiles(pastedFiles);
-            return;
-        }
-
-        const text = e.clipboardData.getData('text');
-        if (text.length > 300) {
-            e.preventDefault();
-            const snippet: PastedContent = {
-                id: Math.random().toString(36).substr(2, 9),
-                content: text,
-                timestamp: new Date()
-            };
-            setPastedContent(prev => [...prev, snippet]);
-        }
     };
 
     const handleSend = () => {
@@ -314,7 +236,6 @@ export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage,
         setMessage("");
         setFiles([]);
         setPastedContent([]);
-        if (textareaRef.current) textareaRef.current.style.height = 'auto';
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -328,133 +249,102 @@ export const ClaudeChatInput: React.FC<ClaudeChatInputProps> = ({ onSendMessage,
 
     return (
         <div
-            className={`relative w-full max-w-2xl mx-auto transition-all duration-300 font-sans`}
+            className="w-full max-w-3xl mx-auto font-sans"
             onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
             onDrop={onDrop}
         >
-            <div className={`
-                !box-content flex flex-col mx-2 md:mx-0 items-stretch transition-all duration-200 relative z-10 rounded-2xl cursor-text border border-bg-300 dark:border-transparent 
-                shadow-[0_0_15px_rgba(0,0,0,0.08)] hover:shadow-[0_0_20px_rgba(0,0,0,0.12)]
-                focus-within:shadow-[0_0_25px_rgba(0,0,0,0.15)]
-                bg-white dark:bg-[#30302E] font-sans antialiased
-                ${isLoading ? 'opacity-80 grayscale-[0.2]' : ''}
-            `}>
-
-                <div className="flex flex-col px-3 pt-3 pb-2 gap-2">
+            <div className={cn(
+                "flex flex-col items-stretch transition-all duration-300 relative rounded-[32px] border bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] focus-within:shadow-[0_8px_30px_rgba(0,0,0,0.08)]",
+                isLoading ? "border-gray-100 opacity-80" : "border-gray-200"
+            )}>
+                <div className="flex flex-col px-4 pt-4 pb-3 gap-3">
+                    {/* Previews */}
                     {(files.length > 0 || pastedContent.length > 0) && (
-                        <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2 px-1">
+                        <div className="flex gap-3 overflow-x-auto pb-2 px-1 custom-scrollbar">
                             {pastedContent.map(content => (
-                                <PastedContentCard
-                                    key={content.id}
-                                    content={content}
-                                    onRemove={(id: string) => setPastedContent(prev => prev.filter(c => c.id !== id))}
-                                />
+                                <PastedContentCard key={content.id} content={content} onRemove={(id) => setPastedContent(p => p.filter(c => c.id !== id))} />
                             ))}
                             {files.map(file => (
-                                <FilePreviewCard
-                                    key={file.id}
-                                    file={file}
-                                    onRemove={(id: string) => setFiles(prev => prev.filter(f => f.id !== id))}
-                                />
+                                <FilePreviewCard key={file.id} file={file} onRemove={(id) => setFiles(f => f.filter(x => x.id !== id))} />
                             ))}
                         </div>
                     )}
 
-                    <div className="relative mb-1">
-                        <div className="max-h-96 w-full overflow-y-auto custom-scrollbar font-sans break-words transition-opacity duration-200 min-h-[2.5rem] pl-1">
-                            <textarea
-                                ref={textareaRef}
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                onPaste={handlePaste}
-                                onKeyDown={handleKeyDown}
-                                disabled={isLoading}
-                                placeholder={isLoading ? "AI is thinking..." : "How can I help you today?"}
-                                className="w-full bg-transparent border-0 outline-none text-text-100 text-[16px] placeholder:text-text-400 resize-none overflow-hidden py-0 leading-relaxed block font-normal antialiased"
-                                rows={1}
-                                autoFocus
-                                style={{ minHeight: '1.5em' }}
-                            />
-                        </div>
-                    </div>
+                    {/* Textarea */}
+                    <textarea
+                        ref={textareaRef}
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        disabled={isLoading}
+                        placeholder="Reply..."
+                        className="w-full bg-transparent border-0 outline-none text-[16px] text-gray-700 placeholder:text-gray-400 resize-none min-h-[24px] overflow-hidden py-1 leading-relaxed antialiased"
+                        rows={1}
+                        autoFocus
+                    />
 
-                    <div className="flex gap-2 w-full items-center">
-                        <div className="relative flex-1 flex items-center shrink min-w-0 gap-1">
+                    {/* Controls */}
+                    <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-1.5">
                             <button
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isLoading}
-                                className="inline-flex items-center justify-center relative shrink-0 transition-colors duration-200 h-8 w-8 rounded-lg active:scale-95 text-text-400 hover:text-text-200 hover:bg-bg-200 disabled:opacity-50"
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-all active:scale-95"
                                 type="button"
                             >
-                                <Icons.Plus className="w-5 h-5" />
+                                <Icons.Plus size={20} />
                             </button>
-
-                            <div className="flex shrink min-w-8 !shrink-0">
-                                <button
-                                    onClick={() => setIsThinkingEnabled(!isThinkingEnabled)}
-                                    disabled={isLoading}
-                                    className={`transition-all duration-200 h-8 w-8 flex items-center justify-center rounded-lg active:scale-95 disabled:opacity-50
-                                        ${isThinkingEnabled
-                                            ? 'text-accent bg-accent/10'
-                                            : 'text-text-400 hover:text-text-200 hover:bg-bg-200'}
-                                    `}
-                                >
-                                    <Icons.Thinking className="w-5 h-5" />
-                                </button>
-                            </div>
+                            <button
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-all active:scale-95"
+                                type="button"
+                            >
+                                <Icons.Clock size={19} />
+                            </button>
                         </div>
 
-                        <div className="flex flex-row items-center min-w-0 gap-1">
-                            <div className="shrink-0 p-1 -m-1">
-                                <ModelSelector
-                                    models={AI_MODELS}
-                                    selectedModelId={selectedModelId}
-                                    onSelect={setSelectedModelId}
-                                />
-                            </div>
+                        <div className="flex items-center gap-3">
+                            <ModelSelector
+                                models={AI_MODELS}
+                                selectedModelId={selectedModelId}
+                                onSelect={setSelectedModelId}
+                            />
 
-                            <div>
+                            <button
+                                onClick={handleSend}
+                                disabled={!hasContent}
+                                className={cn(
+                                    "flex items-center justify-center h-8 w-8 rounded-full transition-all active:scale-90 shadow-sm",
+                                    hasContent
+                                        ? "bg-[#D46B4F] text-white hover:bg-[#c15a3f]"
+                                        : "bg-gray-100 text-gray-300"
+                                )}
+                            >
+                                {isLoading ? (
+                                    <Icons.Loader2 size={16} className="animate-spin" />
+                                ) : (
+                                    <Icons.ArrowUp size={18} strokeWidth={3} />
+                                )}
+                            </button>
+
+                            {onMinimize && (
                                 <button
-                                    onClick={handleSend}
-                                    disabled={!hasContent}
-                                    className={`
-                                        inline-flex items-center justify-center relative shrink-0 transition-colors h-8 w-8 rounded-md active:scale-95 !rounded-xl !h-8 !w-8
-                                        ${hasContent
-                                            ? 'bg-accent text-bg-0 hover:bg-accent-hover shadow-md'
-                                            : 'bg-accent/30 text-bg-0/60 cursor-default'}
-                                    `}
-                                    type="button"
+                                    onClick={onMinimize}
+                                    className="p-1 px-2 text-[10px] font-bold text-gray-300 hover:text-gray-400 transition-colors uppercase tracking-tighter"
                                 >
-                                    {isLoading ? (
-                                        <Icons.Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <Icons.ArrowUp className="w-4 h-4" />
-                                    )}
+                                    Hide
                                 </button>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                onChange={(e) => {
-                    if (e.target.files) handleFiles(e.target.files);
-                    e.target.value = '';
-                }}
-                className="hidden"
-            />
+            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && handleFiles(e.target.files)} />
 
-            <div className="text-center mt-4">
-                <p className="text-xs text-text-500">
-                    AI can make mistakes. Please check important information.
-                </p>
-            </div>
-        </div >
+            <p className="text-center text-[11px] text-gray-400/80 mt-3 font-medium">
+                Claude is AI and can make mistakes. Please check important information.
+            </p>
+        </div>
     );
 };
 

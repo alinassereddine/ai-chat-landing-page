@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { Sidebar } from '../chat/sidebar';
+import { ChevronDown, Share } from 'lucide-react';
 
 interface ChatLayoutProps {
     children: React.ReactNode;
     setCurrentChatId: (id: string) => void;
     onNewChat: () => void;
+    chatTitle?: string;
+    activeChatId?: string | null;
 }
 
-export function ChatLayout({ children, setCurrentChatId, onNewChat }: ChatLayoutProps) {
+export function ChatLayout({ children, setCurrentChatId, onNewChat, chatTitle, activeChatId }: ChatLayoutProps) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     return (
@@ -17,23 +20,26 @@ export function ChatLayout({ children, setCurrentChatId, onNewChat }: ChatLayout
                 setIsOpen={setIsSidebarOpen}
                 onSelectChat={setCurrentChatId}
                 onNewChat={onNewChat}
+                activeChatId={activeChatId}
             />
 
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
                 <header className="h-14 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-10 shrink-0">
-                    <button
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-                    >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </button>
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium opacity-60">Claude 3.5 Sonnet</span>
-                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700 font-bold text-xs">
-                            S
-                        </div>
+                    <div className="flex items-center gap-2">
+                        {/* Title Dropdown */}
+                        <button className="flex items-center gap-2 px-3 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors group">
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate max-w-[200px] sm:max-w-md">
+                                {chatTitle || "New conversation"}
+                            </span>
+                            <ChevronDown size={14} className="text-gray-400 group-hover:text-gray-600" />
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button className="flex items-center gap-2 px-4 py-1.5 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors">
+                            <Share size={14} />
+                            <span>Share</span>
+                        </button>
                     </div>
                 </header>
 
